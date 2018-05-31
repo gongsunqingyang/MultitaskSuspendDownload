@@ -12,6 +12,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *urlLabel;
 @property (weak, nonatomic) IBOutlet UIProgressView *progressView;
 @property (weak, nonatomic) IBOutlet UILabel *progressLabel;
+@property (weak, nonatomic) IBOutlet UILabel *totalLabel;
 @property (weak, nonatomic) IBOutlet UIButton *resumeBtn;
 @property (weak, nonatomic) IBOutlet UIButton *deleteBtn;
 
@@ -57,6 +58,7 @@
     _model = model;
     
     self.urlLabel.text = model.url;
+    self.totalLabel.text = [NSString stringWithFormat:@"%.1fMb", model.totalLength / pow(1024, 2)];
 //    self.progressView.progress = model.progress;
 //    self.progressLabel.text = [NSString stringWithFormat:@"%.f %%", model.progress * 100];
 //    self.resumeBtn.selected = model.resume;

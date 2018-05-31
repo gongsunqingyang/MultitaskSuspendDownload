@@ -29,14 +29,14 @@
                         <nil key="highlightedColor"/>
                     </label>
                     <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="a2i-UG-U66">
-                        <rect key="frame" x="16" y="66.5" width="100" height="10"/>
+                        <rect key="frame" x="16" y="66.5" width="60" height="10"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="100" id="Wav-a4-uKU"/>
+                            <constraint firstAttribute="width" constant="60" id="Wav-a4-uKU"/>
                             <constraint firstAttribute="height" constant="10" id="pmy-Q8-aIk"/>
                         </constraints>
                     </progressView>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0.00" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="PYG-jR-Oku">
-                        <rect key="frame" x="126" y="30" width="35" height="82.5"/>
+                        <rect key="frame" x="86" y="30" width="35" height="82.5"/>
                         <fontDescription key="fontDescription" type="system" pointSize="17"/>
                         <nil key="textColor"/>
                         <nil key="highlightedColor"/>
@@ -63,13 +63,21 @@
                             <action selector="clickDeleteBtn" destination="KGk-i7-Jjw" eventType="touchUpInside" id="V3u-pQ-wcO"/>
                         </connections>
                     </button>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="总大小" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="VdM-V9-IIl">
+                        <rect key="frame" x="129" y="61" width="52" height="21"/>
+                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                        <nil key="textColor"/>
+                        <nil key="highlightedColor"/>
+                    </label>
                 </subviews>
                 <constraints>
                     <constraint firstItem="f1V-p4-j7y" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" constant="5" id="5Vj-Xx-ysT"/>
                     <constraint firstItem="yWA-bz-c0Q" firstAttribute="centerY" secondItem="a2i-UG-U66" secondAttribute="centerY" id="E5y-gl-G5l"/>
+                    <constraint firstItem="VdM-V9-IIl" firstAttribute="centerY" secondItem="a2i-UG-U66" secondAttribute="centerY" id="F0L-2p-tV6"/>
                     <constraint firstItem="PYG-jR-Oku" firstAttribute="top" secondItem="f1V-p4-j7y" secondAttribute="bottom" id="LDX-bZ-5xR"/>
                     <constraint firstAttribute="trailing" secondItem="yWA-bz-c0Q" secondAttribute="trailing" constant="20" id="S2n-8f-dPh"/>
                     <constraint firstAttribute="trailing" secondItem="f1V-p4-j7y" secondAttribute="trailing" constant="10" id="VsZ-2T-R6b"/>
+                    <constraint firstItem="VdM-V9-IIl" firstAttribute="leading" secondItem="PYG-jR-Oku" secondAttribute="trailing" constant="8" id="Xyu-J7-0g5"/>
                     <constraint firstAttribute="bottom" secondItem="PYG-jR-Oku" secondAttribute="bottom" id="YgF-h6-fQg"/>
                     <constraint firstItem="f1V-p4-j7y" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="10" id="gn0-2C-X2W"/>
                     <constraint firstItem="qi3-OK-bWN" firstAttribute="centerY" secondItem="a2i-UG-U66" secondAttribute="centerY" id="jwo-b2-iWE"/>
@@ -84,6 +92,7 @@
                 <outlet property="progressLabel" destination="PYG-jR-Oku" id="roR-Ss-5xW"/>
                 <outlet property="progressView" destination="a2i-UG-U66" id="mrM-ST-Yss"/>
                 <outlet property="resumeBtn" destination="qi3-OK-bWN" id="Fzs-9x-zZe"/>
+                <outlet property="totalLabel" destination="VdM-V9-IIl" id="epE-gL-ayn"/>
                 <outlet property="urlLabel" destination="f1V-p4-j7y" id="99G-ih-867"/>
             </connections>
             <point key="canvasLocation" x="-15" y="126.5"/>

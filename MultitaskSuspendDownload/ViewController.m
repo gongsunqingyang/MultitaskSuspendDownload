@@ -118,6 +118,7 @@
             
             TaskCellModel *model = [TaskCellModel new];
             model.url = url;
+            model.totalLength = totalLength;
             model.progress = progress;
             model.resume = NO;
             

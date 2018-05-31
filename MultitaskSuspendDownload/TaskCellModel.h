@@ -11,6 +11,7 @@
 
 @interface TaskCellModel : NSObject
 @property (nonatomic, copy) NSString *url;
+@property (nonatomic, assign) long long totalLength;
 @property (nonatomic, assign) CGFloat progress;
 @property (nonatomic, assign) BOOL resume;
 @end
