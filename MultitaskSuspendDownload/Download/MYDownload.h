@@ -23,7 +23,7 @@ typedef NS_ENUM(NSInteger, MYDownloadState) {
 @property (nonatomic, assign) long long totalLength;
 @property (nonatomic, assign) long long downloadedLength;
 @property (nonatomic, strong) NSURLSessionDataTask *task;
-@property (nonatomic, strong) NSOutputStream *outputStream;
+@property (nonatomic, strong) NSFileHandle *fileHandle;
 @property (nonatomic, copy) void (^progressBlock)(CGFloat progress);
 @property (nonatomic, copy) void (^stateBlock)(MYDownloadState state);
 @end

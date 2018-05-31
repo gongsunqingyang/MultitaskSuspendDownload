@@ -103,22 +103,6 @@
     return length;
 }
 
-// 创建plist文件
-- (void)createPlistIfNotExist {
-    NSString *path = [self getPlistPath];
-    NSFileManager *fileManager = [[NSFileManager alloc] init];
-    if (![fileManager fileExistsAtPath:path]) {
-        // 创建MYDownload目录
-        NSString *directoryPath = [self getFileCacheDirectory];
-        [fileManager createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:nil];
-        
-        // 创建plist文件
-        [fileManager createFileAtPath:path contents:nil attributes:nil]; // 立即在沙盒中创建一个空plist文件
-        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-        [dict writeToFile:path atomically:YES]; // 将空字典写入plist文件
-    }
-}
-
 // 删除所有文件
 - (void)removeAllFile {
     NSMutableDictionary *plistDict = [self getPlist];
@@ -188,7 +172,57 @@
 
 // 获取临时文件路径
 - (NSString *)getDownloadedPathWithKey:(NSString *)key {
-    NSString *path = [[self getFileCacheDirectory] stringByAppendingPathComponent:key];
+    NSMutableDictionary *plistDict = [self getPlist];
+    NSDictionary *dict = [plistDict valueForKey:key];
+    NSString *path = [dict valueForKey:@"FilePath"];
+    return path;
+}
+
+// 创建plist文件
+- (void)createPlistIfNotExist {
+    NSString *path = [self getPlistPath];
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
+    if (![fileManager fileExistsAtPath:path]) {
+        // 创建MYDownload目录
+        NSString *directoryPath = [self getFileCacheDirectory];
+        [fileManager createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:nil];
+        
+        // 创建plist文件
+        [fileManager createFileAtPath:path contents:nil attributes:nil]; // 立即在沙盒中创建一个空plist文件
+        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+        [dict writeToFile:path atomically:YES]; // 将空字典写入plist文件
+    }
+}
+
+// 创建下载文件路径
+- (NSString *)createDownloadedPathWithFileName:(NSString *)fileName {
+    NSString *cacheDirectory = [self getFileCacheDirectory];
+    NSError *error = nil;
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
+    NSArray *fileNames = [fileManager contentsOfDirectoryAtPath:cacheDirectory error:&error];
+    if (error) {
+        NSLog(@"%s, Error = %@", __func__, error);
+        return nil;
+    }
+    
+    // 如果文件名重复则重命名
+    BOOL fileNameDuplicate = NO;
+    do {
+        for (NSString *aFileName in fileNames) {
+            if ([aFileName isEqualToString:fileName]) {
+                static NSInteger i = 0;
+                fileNameDuplicate = YES;
+                NSMutableArray *strings = [[fileName componentsSeparatedByString:@"."] mutableCopy];
+                NSString *preFix = [NSString stringWithFormat:@"%@(%lu)", [strings firstObject], i++];
+                [strings replaceObjectAtIndex:0 withObject:preFix];
+                fileName = [strings componentsJoinedByString:@"."];
+                break;
+            }
+        }
+        fileNameDuplicate = NO;
+    } while (fileNameDuplicate);
+    
+    NSString *path = [[self getFileCacheDirectory] stringByAppendingPathComponent:fileName];
     return path;
 }
 
@@ -251,26 +285,40 @@
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(nonnull NSURLResponse *)response completionHandler:(nonnull void (^)(NSURLSessionResponseDisposition))completionHandler {
     NSString *key = dataTask.taskKey;
     NSString *url = dataTask.url;
+    NSString *filePath = [self createDownloadedPathWithFileName:@"aaa.mp4"];
     
     MYDownload *download = [self.downloadDict valueForKey:key];
     
-    // 计算并保存文件总大小
+    // 计算总大小并保存到plist
     long long expectedLength = response.expectedContentLength;
     long long downloadedLength = [self getDownloadedLengthWithKey:key];
     long long totalLength = expectedLength + downloadedLength;
-    NSDictionary *dict = @{@"totalLength" : @(totalLength),
-                           @"url" : url};
+    if (totalLength == 0) {
+        if (download.progressBlock) {
+            download.progressBlock(0.f);
+        }
+        if (download.stateBlock) {
+            download.stateBlock(MYDownloadStateError);
+        }
+        return;
+    }
+    NSDictionary *dict = @{@"TotalLength" : @(totalLength),
+                           @"Url" : url,
+                           @"FilePath" : filePath
+                           };
     [self setPlistValue:dict forKey:key];
     
-    // 创建写数据流
-    NSString *filePath = [self getDownloadedPathWithKey:key];
-    NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:filePath append:YES];
-    [outputStream open];
+    // 创建NSFileHandle
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:filePath]) {
+        [fileManager createFileAtPath:filePath contents:nil attributes:nil];
+    }
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:filePath];
     
     // 设置下载对象
     download.totalLength = totalLength;
     download.downloadedLength = downloadedLength;
-    download.outputStream = outputStream;
+    download.fileHandle = fileHandle;
     
 #warning 判断预计数据为0的情况
     completionHandler(NSURLSessionResponseAllow);
@@ -284,8 +332,8 @@
     // 写数据
     MYDownload *download = [self.downloadDict valueForKey:key];
     if (download) {
-        NSOutputStream *outputStream = download.outputStream;
-        [outputStream write:data.bytes maxLength:data.length];
+        [download.fileHandle seekToEndOfFile];
+        [download.fileHandle writeData:data];
         
         download.downloadedLength += data.length;
         CGFloat progress = (CGFloat) download.downloadedLength / download.totalLength;
@@ -306,8 +354,8 @@
 
     // 关闭写数据流
     MYDownload *download = [self.downloadDict valueForKey:key];
-    [download.outputStream close];
-    download.outputStream = nil;
+    [download.fileHandle closeFile];
+    download.fileHandle = nil;
 
     if (download.stateBlock) {
         if (error) {
