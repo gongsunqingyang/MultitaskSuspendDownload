@@ -20,7 +20,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MultitaskSuspendDownload/Download/MYDownloadManager.m"
-            timestampString = "549450692.589046"
+            timestampString = "549453322.7318569"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "102"
@@ -36,11 +36,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MultitaskSuspendDownload/Download/MYDownloadManager.m"
-            timestampString = "549450692.589388"
+            timestampString = "549453322.732142"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "198"
-            endingLineNumber = "198"
+            startingLineNumber = "161"
+            endingLineNumber = "161"
             landmarkName = "-getDownloadedLengthWithKey:"
             landmarkType = "7">
          </BreakpointContent>
@@ -52,11 +52,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MultitaskSuspendDownload/Download/MYDownloadManager.m"
-            timestampString = "549450692.589569"
+            timestampString = "549453322.732335"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "215"
-            endingLineNumber = "215"
+            startingLineNumber = "178"
+            endingLineNumber = "178"
             landmarkName = "-getDownloadedPathWithKey:"
             landmarkType = "7">
          </BreakpointContent>
