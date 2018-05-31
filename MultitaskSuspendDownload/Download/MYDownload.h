@@ -21,6 +21,7 @@ typedef NS_ENUM(NSInteger, MYDownloadState) {
 @property (nonatomic, copy) NSString *key;
 @property (nonatomic, copy) NSString *url;
 @property (nonatomic, assign) long long totalLength;
+@property (nonatomic, assign) long long downloadedLength;
 @property (nonatomic, strong) NSURLSessionDataTask *task;
 @property (nonatomic, strong) NSOutputStream *outputStream;
 @property (nonatomic, copy) void (^progressBlock)(CGFloat progress);

@@ -129,10 +129,10 @@
 
 - (NSArray *)urls {
     if (!_urls) {
-        _urls = @[@"http://yun.it7090.com/video/XHLaunchAd/video03.mp4",
+        _urls = @[@"http://speedtest.tokyo.linode.com/100MB-tokyo.bin",
+                  @"http://yun.it7090.com/video/XHLaunchAd/video03.mp4",
                   @"https://media.w3.org/2010/05/sintel/trailer.mp4",
                   @"http://www.w3school.com.cn/example/html5/mov_bbb.mp4",
-                  @"https://www.w3schools.com/html/movie.mp4",
                   @"https://gcs-vimeo.akamaized.net/exp=1527663379~acl=%2A%2F623685558.mp4%2A~hmac=83e6d2bce66e8e8f2e484034d9ebf902f7e0675c6f7ee946c5a0be1989cfe643/vimeo-prod-skyfire-std-us/01/2670/7/188350983/623685558.mp4",
                   @"https://gcs-vimeo.akamaized.net/exp=1527663362~acl=%2A%2F623661526.mp4%2A~hmac=182bb0761e8a920a2b240b196038ea8173a884eccaf139bc39b60ede1f55db2b/vimeo-prod-skyfire-std-us/01/2684/7/188421287/623661526.mp4"
                   ];
@@ -170,7 +170,30 @@
             [[MYDownloadManager sharedManager] downloadWithUrl:model.url resume:model.resume progress:^(CGFloat progress) {
                 model.progress = progress;
             } state:^(MYDownloadState state) {
-                NSLog(@"State = %lu", state);
+                switch (state) {
+                    case MYDownloadStateDownloading: {
+                        
+                    }
+                        break;
+                    case MYDownloadStateComplete: {
+                        model.resume = NO;
+                    }
+                        break;
+                    case MYDownloadStateError: {
+                        model.resume = NO;
+                    }
+                        break;
+                    case MYDownloadStateSuspend: {
+                        
+                    }
+                        break;
+                    case MYDownloadStateCancel: {
+                        model.resume = NO;
+                    }
+                        break;
+                    default:
+                        break;
+                }
             }];
             
         }

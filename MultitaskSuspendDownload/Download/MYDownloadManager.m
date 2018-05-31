@@ -106,7 +106,7 @@
 // 创建plist文件
 - (void)createPlistIfNotExist {
     NSString *path = [self getPlistPath];
-    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
     if (![fileManager fileExistsAtPath:path]) {
         // 创建MYDownload目录
         NSString *directoryPath = [self getFileCacheDirectory];
@@ -172,20 +172,18 @@
 
 // 获取已下载文件大小
 - (long long)getDownloadedLengthWithKey:(NSString *)key {
-    NSData *file = [self getDownloadedFileWithKey:key];
-    return file.length;
-}
-
-// 获取已下载文件
-- (NSData *)getDownloadedFileWithKey:(NSString *)key {
+    NSLog(@"// 获取已下载文件大小");
+    long long fileLength = 0;
     NSString *path = [self getDownloadedPathWithKey:key];
-    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
     if ([fileManager fileExistsAtPath:path]) {
-#warning 内存警告
-        NSData *file = [NSData dataWithContentsOfFile:path];
-        return file;
+        NSError *error = nil;
+        NSDictionary *fileDict = [fileManager attributesOfItemAtPath:path error:&error];
+        if (!error && fileDict) {
+            fileLength = [fileDict fileSize];
+        }
     }
-    return nil;
+    return fileLength;
 }
 
 // 获取临时文件路径
@@ -233,7 +231,7 @@
     [self removePlistValueForKey:key];
     
     // 删除下载文件
-    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
     if ([fileManager fileExistsAtPath:path]) {
         [fileManager removeItemAtPath:path error:nil];
     }
@@ -254,6 +252,8 @@
     NSString *key = dataTask.taskKey;
     NSString *url = dataTask.url;
     
+    MYDownload *download = [self.downloadDict valueForKey:key];
+    
     // 计算并保存文件总大小
     long long expectedLength = response.expectedContentLength;
     long long downloadedLength = [self getDownloadedLengthWithKey:key];
@@ -267,9 +267,9 @@
     NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:filePath append:YES];
     [outputStream open];
     
-    // 取出并设置下载对象
-    MYDownload *download = [self.downloadDict valueForKey:key];
+    // 设置下载对象
     download.totalLength = totalLength;
+    download.downloadedLength = downloadedLength;
     download.outputStream = outputStream;
     
 #warning 判断预计数据为0的情况
@@ -287,9 +287,8 @@
         NSOutputStream *outputStream = download.outputStream;
         [outputStream write:data.bytes maxLength:data.length];
         
-        long long downloadedLength = [self getDownloadedLengthWithKey:key];
-        long long totalLength = [self getTotalLengthWithKey:key];
-        CGFloat progress = (CGFloat)downloadedLength / totalLength;
+        download.downloadedLength += data.length;
+        CGFloat progress = (CGFloat) download.downloadedLength / download.totalLength;
         
         if (download.progressBlock) {
             download.progressBlock(progress);
