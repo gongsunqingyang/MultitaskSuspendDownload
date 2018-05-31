@@ -110,8 +110,8 @@
         for (NSString *key in plistDict.allKeys) {
             NSDictionary *dict = [plistDict valueForKey:key];
             
-            NSNumber *totalLengthNumber = [dict valueForKey:@"totalLength"];
-            NSString *url = [dict valueForKey:@"url"];
+            NSNumber *totalLengthNumber = [dict valueForKey:@"TotalLength"];
+            NSString *url = [dict valueForKey:@"Url"];
             long long totalLength = [totalLengthNumber longLongValue];
             long long downloadedLength = [[MYDownloadManager sharedManager] getDownloadedLengthWithUrl:url];
             CGFloat progress = (CGFloat) downloadedLength / totalLength;

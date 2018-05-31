@@ -154,6 +154,43 @@
     return cachePath;
 }
 
+// 获取不重复的文件名
+- (NSString *)getUniqueFileNameWithFileName:(NSString *)fileName {
+    NSError *error = nil;
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
+    
+    // 如果没有则创建MYDownload目录
+    NSString *cacheDirectory = [self getFileCacheDirectory];
+    if (![fileManager fileExistsAtPath:cacheDirectory]) {
+        NSString *directoryPath = [self getFileCacheDirectory];
+        [fileManager createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    
+    NSArray *fileNames = [fileManager contentsOfDirectoryAtPath:cacheDirectory error:&error];
+    if (error) {
+        NSLog(@"%s, Error = %@", __func__, error);
+        return nil;
+    }
+    
+    // 如果文件名重复则重命名
+    BOOL fileNameDuplicate = NO;
+    do {
+        fileNameDuplicate = NO;
+        for (NSString *aFileName in fileNames) {
+            if ([aFileName isEqualToString:fileName]) {
+                static NSInteger i = 0;
+                fileNameDuplicate = YES;
+                NSMutableArray *strings = [[fileName componentsSeparatedByString:@"."] mutableCopy];
+                NSString *preFix = [NSString stringWithFormat:@"%@(%lu)", [strings firstObject], i++];
+                [strings replaceObjectAtIndex:0 withObject:preFix];
+                fileName = [strings componentsJoinedByString:@"."];
+                break;
+            }
+        }
+    } while (fileNameDuplicate);
+    return fileName;
+}
+
 // 获取已下载文件大小
 - (long long)getDownloadedLengthWithKey:(NSString *)key {
     NSLog(@"// 获取已下载文件大小");
@@ -170,12 +207,13 @@
     return fileLength;
 }
 
-// 获取临时文件路径
+// 获取下载文件路径
 - (NSString *)getDownloadedPathWithKey:(NSString *)key {
     NSMutableDictionary *plistDict = [self getPlist];
     NSDictionary *dict = [plistDict valueForKey:key];
-    NSString *path = [dict valueForKey:@"FilePath"];
-    return path;
+    NSString *fileName = [dict valueForKey:@"FileName"];
+    NSString *filePath = [self getDownloadedPathWithFileName:fileName];
+    return filePath;
 }
 
 // 创建plist文件
@@ -194,34 +232,8 @@
     }
 }
 
-// 创建下载文件路径
-- (NSString *)createDownloadedPathWithFileName:(NSString *)fileName {
-    NSString *cacheDirectory = [self getFileCacheDirectory];
-    NSError *error = nil;
-    NSFileManager *fileManager = [[NSFileManager alloc] init];
-    NSArray *fileNames = [fileManager contentsOfDirectoryAtPath:cacheDirectory error:&error];
-    if (error) {
-        NSLog(@"%s, Error = %@", __func__, error);
-        return nil;
-    }
-    
-    // 如果文件名重复则重命名
-    BOOL fileNameDuplicate = NO;
-    do {
-        for (NSString *aFileName in fileNames) {
-            if ([aFileName isEqualToString:fileName]) {
-                static NSInteger i = 0;
-                fileNameDuplicate = YES;
-                NSMutableArray *strings = [[fileName componentsSeparatedByString:@"."] mutableCopy];
-                NSString *preFix = [NSString stringWithFormat:@"%@(%lu)", [strings firstObject], i++];
-                [strings replaceObjectAtIndex:0 withObject:preFix];
-                fileName = [strings componentsJoinedByString:@"."];
-                break;
-            }
-        }
-        fileNameDuplicate = NO;
-    } while (fileNameDuplicate);
-    
+// 获取下载文件路径
+- (NSString *)getDownloadedPathWithFileName:(NSString *)fileName {
     NSString *path = [[self getFileCacheDirectory] stringByAppendingPathComponent:fileName];
     return path;
 }
@@ -285,7 +297,8 @@
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(nonnull NSURLResponse *)response completionHandler:(nonnull void (^)(NSURLSessionResponseDisposition))completionHandler {
     NSString *key = dataTask.taskKey;
     NSString *url = dataTask.url;
-    NSString *filePath = [self createDownloadedPathWithFileName:@"aaa.mp4"];
+    NSString *fileName = [self getUniqueFileNameWithFileName:response.suggestedFilename];
+    NSString *filePath = [self getDownloadedPathWithFileName:fileName];
     
     MYDownload *download = [self.downloadDict valueForKey:key];
     
@@ -304,7 +317,7 @@
     }
     NSDictionary *dict = @{@"TotalLength" : @(totalLength),
                            @"Url" : url,
-                           @"FilePath" : filePath
+                           @"FileName" : fileName
                            };
     [self setPlistValue:dict forKey:key];
     
