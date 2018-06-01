@@ -10,15 +10,30 @@
 #import "MYDownload.h"
 
 @interface MYDownloadManager : NSObject
+
+/**
+ 单例
+ */
 + (instancetype)sharedManager;
-- (void)downloadWithUrl:(NSString *)url resume:(BOOL)resume progress:(void (^)(CGFloat progress))progressBlock state:(void (^)(MYDownloadState state))stateBlock;
+/**
+ 开始、暂停下载任务
+ */
+- (void)downloadWithUrl:(NSString *)url resume:(BOOL)resume progress:(ProgressBlock)progressBlock state:(StateBlock)stateBlock;
 /**
  获取任务记录
-
- @return @{@"key" : @{@"totalLength" : @(9999), @"url" : @"http://.../file.mp4"}}
  */
 - (NSMutableDictionary *)getPlist;
+/**
+ 获取已下载大小
+ */
 - (long long)getDownloadedLengthWithUrl:(NSString *)url;
+/**
+ 移除单个文件
+ */
 - (void)removeFileWithUrl:(NSString *)url;
+/**
+ 移除所有文件
+ */
 - (void)removeAllFile;
+
 @end

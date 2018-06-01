@@ -71,6 +71,8 @@
     if (url) {
         TaskCellModel *model = [TaskCellModel new];
         model.url = url;
+        model.downloadedLength = 0;
+        model.totalLength = 0;
         model.progress = 0.f;
         model.resume = NO;
         
@@ -118,6 +120,7 @@
             
             TaskCellModel *model = [TaskCellModel new];
             model.url = url;
+            model.downloadedLength = downloadedLength;
             model.totalLength = totalLength;
             model.progress = progress;
             model.resume = NO;
@@ -158,7 +161,9 @@
         cell = [[TaskCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"identifier"];
     }
     cell.delegate = self;
-    cell.model = self.dataSource[indexPath.row];
+    TaskCellModel *model = self.dataSource[indexPath.row];
+    cell.model = model;
+    [cell updateCellWithUrl:model.url downloadedLength:model.downloadedLength totalLength:model.totalLength resume:model.resume];
     return cell;
 }
 
@@ -168,8 +173,12 @@
     
     switch (event) {
         case TaskCellEventResume: case TaskCellEventSuspend:{
-            [[MYDownloadManager sharedManager] downloadWithUrl:model.url resume:model.resume progress:^(CGFloat progress) {
+            // 开始、暂停下载任务
+            [[MYDownloadManager sharedManager] downloadWithUrl:model.url resume:model.resume progress:^(CGFloat progress, long long downloadedlength, long long totalLength) {
+                model.downloadedLength = downloadedlength;
+                model.totalLength = totalLength;
                 model.progress = progress;
+                [cell updateCellWithUrl:model.url downloadedLength:downloadedlength totalLength:totalLength resume:model.resume];
             } state:^(MYDownloadState state) {
                 switch (state) {
                     case MYDownloadStateDownloading: {
@@ -196,13 +205,14 @@
                         break;
                 }
             }];
-            
         }
             break;
         case TaskCellEventDelete:{
             [[MYDownloadManager sharedManager] removeFileWithUrl:model.url];
+            model.downloadedLength = 0.f;
             model.progress = 0.f;
             model.resume = NO;
+            [cell updateCellWithUrl:model.url downloadedLength:model.downloadedLength totalLength:model.totalLength resume:model.resume];
         }
             break;
         default:

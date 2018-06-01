@@ -17,6 +17,9 @@ typedef NS_ENUM(NSInteger, MYDownloadState) {
     MYDownloadStateCancel        // 取消
 };
 
+typedef void(^ProgressBlock)(CGFloat progress, long long downloadedlength, long long totalLength);
+typedef void(^StateBlock)(MYDownloadState state);
+
 @interface MYDownload : NSObject
 @property (nonatomic, copy) NSString *key;
 @property (nonatomic, copy) NSString *url;
@@ -24,6 +27,6 @@ typedef NS_ENUM(NSInteger, MYDownloadState) {
 @property (nonatomic, assign) long long downloadedLength;
 @property (nonatomic, strong) NSURLSessionDataTask *task;
 @property (nonatomic, strong) NSFileHandle *fileHandle;
-@property (nonatomic, copy) void (^progressBlock)(CGFloat progress);
-@property (nonatomic, copy) void (^stateBlock)(MYDownloadState state);
+@property (nonatomic, copy) ProgressBlock progressBlock;
+@property (nonatomic, copy) StateBlock stateBlock;
 @end

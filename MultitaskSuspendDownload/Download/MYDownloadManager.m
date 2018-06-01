@@ -28,7 +28,7 @@
     return instance;
 }
 
-- (void)downloadWithUrl:(NSString *)url resume:(BOOL)resume progress:(void (^)(CGFloat progress))progressBlock state:(void (^)(MYDownloadState state))stateBlock {
+- (void)downloadWithUrl:(NSString *)url resume:(BOOL)resume progress:(ProgressBlock)progressBlock state:(StateBlock)stateBlock {
     if (!url.length) {
         return;
     }
@@ -41,7 +41,7 @@
     // 任务已完成
     if (totalLength == downloadedLength && totalLength > 0) {
         if (progressBlock) {
-            progressBlock(1.0);
+            progressBlock(1.0, downloadedLength, totalLength);
         }
         if (stateBlock) {
             stateBlock(MYDownloadStateComplete);
@@ -227,7 +227,7 @@
     if (download) {
         [download.task cancel];
         if (download.progressBlock) {
-            download.progressBlock(0.f);
+            download.progressBlock(0.f, 0.f, download.totalLength);
         }
         if (download.stateBlock) {
             download.stateBlock(MYDownloadStateCancel);
@@ -270,7 +270,7 @@
     long long totalLength = expectedLength + downloadedLength;
     if (totalLength == 0) {
         if (download.progressBlock) {
-            download.progressBlock(0.f);
+            download.progressBlock(0.f, downloadedLength, totalLength);
         }
         if (download.stateBlock) {
             download.stateBlock(MYDownloadStateError);
@@ -295,7 +295,6 @@
     download.downloadedLength = downloadedLength;
     download.fileHandle = fileHandle;
     
-#warning 判断预计数据为0的情况
     completionHandler(NSURLSessionResponseAllow);
     NSLog(@"/// Response exp = %llu, down = %llu, total = %llu", expectedLength, downloadedLength, totalLength);
 }
@@ -314,7 +313,7 @@
         CGFloat progress = (CGFloat) download.downloadedLength / download.totalLength;
         
         if (download.progressBlock) {
-            download.progressBlock(progress);
+            download.progressBlock(progress, download.downloadedLength, download.totalLength);
         }
         if (download.stateBlock) {
             download.stateBlock(MYDownloadStateDownloading);
