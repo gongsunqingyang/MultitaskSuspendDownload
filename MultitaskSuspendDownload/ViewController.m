@@ -71,6 +71,8 @@
     if (url) {
         TaskCellModel *model = [TaskCellModel new];
         model.url = url;
+        model.downloadedLength = 0;
+        model.totalLength = 0;
         model.progress = 0.f;
         model.resume = NO;
         
@@ -110,14 +112,16 @@
         for (NSString *key in plistDict.allKeys) {
             NSDictionary *dict = [plistDict valueForKey:key];
             
-            NSNumber *totalLengthNumber = [dict valueForKey:@"totalLength"];
-            NSString *url = [dict valueForKey:@"url"];
+            NSNumber *totalLengthNumber = [dict valueForKey:@"TotalLength"];
+            NSString *url = [dict valueForKey:@"Url"];
             long long totalLength = [totalLengthNumber longLongValue];
             long long downloadedLength = [[MYDownloadManager sharedManager] getDownloadedLengthWithUrl:url];
             CGFloat progress = (CGFloat) downloadedLength / totalLength;
             
             TaskCellModel *model = [TaskCellModel new];
             model.url = url;
+            model.downloadedLength = downloadedLength;
+            model.totalLength = totalLength;
             model.progress = progress;
             model.resume = NO;
             
@@ -157,7 +161,9 @@
         cell = [[TaskCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"identifier"];
     }
     cell.delegate = self;
-    cell.model = self.dataSource[indexPath.row];
+    TaskCellModel *model = self.dataSource[indexPath.row];
+    cell.model = model;
+    [cell updateCellWithUrl:model.url downloadedLength:model.downloadedLength totalLength:model.totalLength resume:model.resume];
     return cell;
 }
 
@@ -167,8 +173,12 @@
     
     switch (event) {
         case TaskCellEventResume: case TaskCellEventSuspend:{
-            [[MYDownloadManager sharedManager] downloadWithUrl:model.url resume:model.resume progress:^(CGFloat progress) {
+            // 开始、暂停下载任务
+            [[MYDownloadManager sharedManager] downloadWithUrl:model.url resume:model.resume progress:^(CGFloat progress, long long downloadedlength, long long totalLength) {
+                model.downloadedLength = downloadedlength;
+                model.totalLength = totalLength;
                 model.progress = progress;
+                [cell updateCellWithUrl:model.url downloadedLength:downloadedlength totalLength:totalLength resume:model.resume];
             } state:^(MYDownloadState state) {
                 switch (state) {
                     case MYDownloadStateDownloading: {
@@ -195,13 +205,14 @@
                         break;
                 }
             }];
-            
         }
             break;
         case TaskCellEventDelete:{
             [[MYDownloadManager sharedManager] removeFileWithUrl:model.url];
+            model.downloadedLength = 0.f;
             model.progress = 0.f;
             model.resume = NO;
+            [cell updateCellWithUrl:model.url downloadedLength:model.downloadedLength totalLength:model.totalLength resume:model.resume];
         }
             break;
         default:

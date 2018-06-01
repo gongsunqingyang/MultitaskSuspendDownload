@@ -28,7 +28,7 @@
     return instance;
 }
 
-- (void)downloadWithUrl:(NSString *)url resume:(BOOL)resume progress:(void (^)(CGFloat progress))progressBlock state:(void (^)(MYDownloadState state))stateBlock {
+- (void)downloadWithUrl:(NSString *)url resume:(BOOL)resume progress:(ProgressBlock)progressBlock state:(StateBlock)stateBlock {
     if (!url.length) {
         return;
     }
@@ -41,7 +41,7 @@
     // 任务已完成
     if (totalLength == downloadedLength && totalLength > 0) {
         if (progressBlock) {
-            progressBlock(1.0);
+            progressBlock(1.0, downloadedLength, totalLength);
         }
         if (stateBlock) {
             stateBlock(MYDownloadStateComplete);
@@ -101,22 +101,6 @@
     NSString *key = [url md5];
     long long length = [self getDownloadedLengthWithKey:key];
     return length;
-}
-
-// 创建plist文件
-- (void)createPlistIfNotExist {
-    NSString *path = [self getPlistPath];
-    NSFileManager *fileManager = [[NSFileManager alloc] init];
-    if (![fileManager fileExistsAtPath:path]) {
-        // 创建MYDownload目录
-        NSString *directoryPath = [self getFileCacheDirectory];
-        [fileManager createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:nil];
-        
-        // 创建plist文件
-        [fileManager createFileAtPath:path contents:nil attributes:nil]; // 立即在沙盒中创建一个空plist文件
-        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-        [dict writeToFile:path atomically:YES]; // 将空字典写入plist文件
-    }
 }
 
 // 删除所有文件
@@ -186,9 +170,34 @@
     return fileLength;
 }
 
-// 获取临时文件路径
+// 获取下载文件路径
 - (NSString *)getDownloadedPathWithKey:(NSString *)key {
-    NSString *path = [[self getFileCacheDirectory] stringByAppendingPathComponent:key];
+    NSMutableDictionary *plistDict = [self getPlist];
+    NSDictionary *dict = [plistDict valueForKey:key];
+    NSString *fileName = [dict valueForKey:@"FileName"];
+    NSString *filePath = [self getDownloadedPathWithFileName:fileName];
+    return filePath;
+}
+
+// 创建plist文件
+- (void)createPlistIfNotExist {
+    NSString *path = [self getPlistPath];
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
+    if (![fileManager fileExistsAtPath:path]) {
+        // 创建MYDownload目录
+        NSString *directoryPath = [self getFileCacheDirectory];
+        [fileManager createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:nil];
+        
+        // 创建plist文件
+        [fileManager createFileAtPath:path contents:nil attributes:nil]; // 立即在沙盒中创建一个空plist文件
+        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+        [dict writeToFile:path atomically:YES]; // 将空字典写入plist文件
+    }
+}
+
+// 获取下载文件路径
+- (NSString *)getDownloadedPathWithFileName:(NSString *)fileName {
+    NSString *path = [[self getFileCacheDirectory] stringByAppendingPathComponent:fileName];
     return path;
 }
 
@@ -218,7 +227,7 @@
     if (download) {
         [download.task cancel];
         if (download.progressBlock) {
-            download.progressBlock(0.f);
+            download.progressBlock(0.f, 0.f, download.totalLength);
         }
         if (download.stateBlock) {
             download.stateBlock(MYDownloadStateCancel);
@@ -251,28 +260,41 @@
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(nonnull NSURLResponse *)response completionHandler:(nonnull void (^)(NSURLSessionResponseDisposition))completionHandler {
     NSString *key = dataTask.taskKey;
     NSString *url = dataTask.url;
+    NSString *filePath = [self getDownloadedPathWithFileName:response.suggestedFilename];
     
     MYDownload *download = [self.downloadDict valueForKey:key];
     
-    // 计算并保存文件总大小
+    // 计算总大小并保存到plist
     long long expectedLength = response.expectedContentLength;
     long long downloadedLength = [self getDownloadedLengthWithKey:key];
     long long totalLength = expectedLength + downloadedLength;
-    NSDictionary *dict = @{@"totalLength" : @(totalLength),
-                           @"url" : url};
+    if (totalLength == 0) {
+        if (download.progressBlock) {
+            download.progressBlock(0.f, downloadedLength, totalLength);
+        }
+        if (download.stateBlock) {
+            download.stateBlock(MYDownloadStateError);
+        }
+        return;
+    }
+    NSDictionary *dict = @{@"TotalLength" : @(totalLength),
+                           @"Url" : url,
+                           @"FileName" : response.suggestedFilename
+                           };
     [self setPlistValue:dict forKey:key];
     
-    // 创建写数据流
-    NSString *filePath = [self getDownloadedPathWithKey:key];
-    NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:filePath append:YES];
-    [outputStream open];
+    // 创建NSFileHandle
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:filePath]) {
+        [fileManager createFileAtPath:filePath contents:nil attributes:nil];
+    }
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:filePath];
     
     // 设置下载对象
     download.totalLength = totalLength;
     download.downloadedLength = downloadedLength;
-    download.outputStream = outputStream;
+    download.fileHandle = fileHandle;
     
-#warning 判断预计数据为0的情况
     completionHandler(NSURLSessionResponseAllow);
     NSLog(@"/// Response exp = %llu, down = %llu, total = %llu", expectedLength, downloadedLength, totalLength);
 }
@@ -284,14 +306,14 @@
     // 写数据
     MYDownload *download = [self.downloadDict valueForKey:key];
     if (download) {
-        NSOutputStream *outputStream = download.outputStream;
-        [outputStream write:data.bytes maxLength:data.length];
+        [download.fileHandle seekToEndOfFile];
+        [download.fileHandle writeData:data];
         
         download.downloadedLength += data.length;
         CGFloat progress = (CGFloat) download.downloadedLength / download.totalLength;
         
         if (download.progressBlock) {
-            download.progressBlock(progress);
+            download.progressBlock(progress, download.downloadedLength, download.totalLength);
         }
         if (download.stateBlock) {
             download.stateBlock(MYDownloadStateDownloading);
@@ -306,8 +328,8 @@
 
     // 关闭写数据流
     MYDownload *download = [self.downloadDict valueForKey:key];
-    [download.outputStream close];
-    download.outputStream = nil;
+    [download.fileHandle closeFile];
+    download.fileHandle = nil;
 
     if (download.stateBlock) {
         if (error) {

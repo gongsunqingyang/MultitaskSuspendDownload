@@ -23,4 +23,5 @@ typedef NS_ENUM(NSInteger, TaskCellEvent) {
 @interface TaskCell : UITableViewCell
 @property (nonatomic, weak) id <TaskCellDelegate> delegate;
 @property (nonatomic, strong) TaskCellModel *model;
+- (void)updateCellWithUrl:(NSString *)url downloadedLength:(long long)downloadedLength totalLength:(long long)totalLength resume:(BOOL)resume;
 @end

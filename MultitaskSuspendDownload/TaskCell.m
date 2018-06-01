@@ -21,15 +21,6 @@
 
 - (void)awakeFromNib {
     [super awakeFromNib];
-
-    // KVO
-    [self addObserver:self forKeyPath:@"model.progress" options:NSKeyValueObservingOptionNew context:nil];
-    [self addObserver:self forKeyPath:@"model.resume" options:NSKeyValueObservingOptionNew context:nil];
-}
-
-- (void)dealloc {
-    [self removeObserver:self forKeyPath:@"model.progress"];
-    [self removeObserver:self forKeyPath:@"model.resume"];
 }
 
 - (IBAction)clickResumeBtn:(UIButton *)sender {
@@ -53,36 +44,24 @@
     }
 }
 
-- (void)setModel:(TaskCellModel *)model {
-    _model = model;
-    
-    self.urlLabel.text = model.url;
-//    self.progressView.progress = model.progress;
-//    self.progressLabel.text = [NSString stringWithFormat:@"%.f %%", model.progress * 100];
-//    self.resumeBtn.selected = model.resume;
-}
-
-// KVO
-- (void)observeValueForKeyPath:(nullable NSString *)keyPath ofObject:(nullable id)object change:(nullable NSDictionary<NSKeyValueChangeKey, id> *)change context:(nullable void *)context {
-    if ([keyPath isEqualToString:@"model.progress"]) {
-        CGFloat progress = [[change valueForKey:NSKeyValueChangeNewKey] floatValue];
+- (void)updateCellWithUrl:(NSString *)url downloadedLength:(long long)downloadedLength totalLength:(long long)totalLength resume:(BOOL)resume {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        
+        CGFloat progress = 0.f;
+        if (totalLength) {
+            progress = (CGFloat) downloadedLength / totalLength;
+        }
         if (progress == 1) {
             self.model.resume = NO;
-        }
-//        NSLog(@"KVO progress %.2f", progress);
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.progressView.progress = progress;
-            self.progressLabel.text = [NSString stringWithFormat:@"%.f%%", progress * 100];
-        });
-    } else if ([keyPath isEqualToString:@"model.resume"]){
-        BOOL resume = [[change valueForKey:NSKeyValueChangeNewKey] boolValue];
-//        NSLog(@"KVO resume %d", resume);
-        dispatch_async(dispatch_get_main_queue(), ^{
+            self.resumeBtn.selected = NO;
+        } else {
             self.resumeBtn.selected = resume;
-        });
-    } else {
-        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-    }
+        }
+        self.urlLabel.text = url;
+        self.progressView.progress = progress;
+        self.progressLabel.text = [NSString stringWithFormat:@"[%.1f%%]  [%.1fMb/%.1fMb]", progress * 100, downloadedLength  / pow(1024, 2), totalLength / pow(1024, 2)];
+    });
 }
+
 
 @end
