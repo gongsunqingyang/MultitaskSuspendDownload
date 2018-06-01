@@ -21,12 +21,11 @@ typedef void(^ProgressBlock)(CGFloat progress, long long downloadedlength, long 
 typedef void(^StateBlock)(MYDownloadState state);
 
 @interface MYDownload : NSObject
-@property (nonatomic, copy) NSString *key;
-@property (nonatomic, copy) NSString *url;
-@property (nonatomic, assign) long long totalLength;
-@property (nonatomic, assign) long long downloadedLength;
-@property (nonatomic, strong) NSURLSessionDataTask *task;
-@property (nonatomic, strong) NSFileHandle *fileHandle;
-@property (nonatomic, copy) ProgressBlock progressBlock;
-@property (nonatomic, copy) StateBlock stateBlock;
+@property (nonatomic, copy) NSString *url;                  // 下载地址
+@property (nonatomic, assign) long long downloadedLength;   // 已下载大小
+@property (nonatomic, assign) long long totalLength;        // 总大小
+@property (nonatomic, strong) NSURLSessionDataTask *task;   // 任务
+@property (nonatomic, strong) NSFileHandle *fileHandle;     // 文件句柄
+@property (nonatomic, copy) ProgressBlock progressBlock;    // 下载进度回调
+@property (nonatomic, copy) StateBlock stateBlock;          // 下载状态回调
 @end

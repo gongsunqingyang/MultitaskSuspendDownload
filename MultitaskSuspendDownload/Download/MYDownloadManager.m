@@ -11,8 +11,7 @@
 #import "NSURLSessionTask+Extension.h"
 
 @interface MYDownloadManager ()<NSURLSessionDataDelegate>
-@property (nonatomic, strong) NSMutableDictionary *downloadDict;    // 当前下载任务的字典（key:url, value:<MYDownload *>）
-
+@property (nonatomic, strong) NSMutableDictionary *downloadDict;    // {Key : md5, Value : <MYDonwload *>}
 @end
 
 
@@ -80,7 +79,6 @@
         
         // 创建并保存下载对象
         download = [MYDownload new];
-        download.key = key;
         download.url = url;
         download.task = task;
         download.progressBlock = progressBlock;
@@ -296,7 +294,6 @@
     download.fileHandle = fileHandle;
     
     completionHandler(NSURLSessionResponseAllow);
-    NSLog(@"/// Response exp = %llu, down = %llu, total = %llu", expectedLength, downloadedLength, totalLength);
 }
 
 // 收到数据（多次调用）
@@ -318,7 +315,6 @@
         if (download.stateBlock) {
             download.stateBlock(MYDownloadStateDownloading);
         }
-//        NSLog(@"/// Receive Down %lld, Total %lld, Progress = %.2f", downloadedLength, totalLength, progress);
     }
 }
 
@@ -340,7 +336,6 @@
     }
 
     [self.downloadDict removeObjectForKey:key];
-    NSLog(@"/// Complete error = %@", error);
 }
 
 
